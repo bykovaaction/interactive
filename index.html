@@ -102,30 +102,31 @@ html, body {
     transition: width .7s cubic-bezier(.4,0,.2,1);
   }
   /* label */
-  .bar-label {
+ .bar-label {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px; /* чуть больше воздуха */
+  justify-content: flex-start; /* ВАЖНО: было center */
+  gap: 6px;
   font-size: 11.5px;
   font-weight: 700;
   color: #fff;
   pointer-events: none;
   text-shadow: 0 1px 3px rgba(0,0,0,.18);
   z-index: 2;
-  padding: 0 8px;
+  padding: 0 10px; /* чуть больше отступ */
   overflow: hidden;
   white-space: nowrap;
+  text-align: left;
 }
-  .bar-label span:first-child {
+.bar-label span:first-child {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-  .bar-pct {
+ .bar-pct {
   flex: 0 0 auto;
   font-size: 9px;
   font-weight: 800;
