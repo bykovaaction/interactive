@@ -38,6 +38,7 @@
 
 html, body {
   overflow-x: hidden;
+  overflow-y: visible;
 }
 
   .tl-wrap { padding: 28px 36px 24px; }
@@ -106,34 +107,39 @@ html, body {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: flex-start; /* ВАЖНО: было center */
-  gap: 6px;
-  font-size: 11.5px;
+  flex-direction: column;              /* ВАЖНО */
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+
+  font-size: 10px;                     /* меньше */
   font-weight: 700;
+  line-height: 1.2;
+
   color: #fff;
   pointer-events: none;
   text-shadow: 0 1px 3px rgba(0,0,0,.18);
   z-index: 2;
-  padding: 0 10px; /* чуть больше отступ */
-  overflow: hidden;
-  white-space: nowrap;
-  text-align: left;
+
+  padding: 6px 8px;                    /* вертикальный отступ */
+  
+  white-space: normal;                 /* ВАЖНО: разрешаем перенос */
+  overflow: hidden;                    /* можно оставить */
 }
 .bar-label span:first-child {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;              /* максимум 2 строки */
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
- .bar-pct {
-  flex: 0 0 auto;
+.bar-pct {
   font-size: 9px;
   font-weight: 800;
   opacity: .9;
   background: rgba(255,255,255,.22);
   padding: 1px 4px;
   border-radius: 20px;
+  align-self: flex-start;
 }
 
   .bar-track:hover .bar-base { filter: brightness(.92); }
@@ -198,15 +204,16 @@ html, body {
     text-align: center;
     margin-bottom: 6px;
   }
-  .pin-title {
-    display: block;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--label-text);
-    line-height: 1.38;
-    white-space: pre-line;
-    transition: color .2s;
-  }
+.pin-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--label-text);
+  line-height: 1.3;
+
+  white-space: normal;      /* разрешаем перенос */
+  max-width: 120px;         /* ограничиваем ширину */
+}
   .pin-date {
     display: block;
     font-size: 10.5px;
@@ -456,7 +463,28 @@ html, body {
 
   /* ── TOOLTIP ── */
   function showTT(e, html) { ttEl.innerHTML = html; ttEl.classList.add('show'); moveTT(e); }
-  function moveTT(e) { ttEl.style.left = (e.clientX+14)+'px'; ttEl.style.top = (e.clientY-50)+'px'; }
+  function moveTT(e) {
+  const pad = 12;
+  const ttRect = ttEl.getBoundingClientRect();
+
+  let x = e.clientX + 14;
+  let y = e.clientY - 50;
+
+  if (x + ttRect.width > window.innerWidth - pad) {
+    x = window.innerWidth - ttRect.width - pad;
+  }
+
+  if (x < pad) {
+    x = pad;
+  }
+
+  if (y < pad) {
+    y = pad;
+  }
+
+  ttEl.style.left = x + 'px';
+  ttEl.style.top = y + 'px';
+}
   function hideTT() { ttEl.classList.remove('show'); }
 
 })();
