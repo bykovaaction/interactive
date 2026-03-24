@@ -36,11 +36,9 @@
     --today: #e5464b;
   }
 
-  html, body {
-    background: #fff;
-    font-family: var(--font);
-    overflow: hidden;
-  }
+html, body {
+  overflow-x: hidden;
+}
 
   .tl-wrap { padding: 28px 36px 24px; }
 
@@ -78,6 +76,8 @@
     bottom: 0; left: 0; right: 0;
     height: 44px;
     display: flex;
+    left: 8px;
+    right: 8px;
   }
 
   .bar-track {
@@ -288,6 +288,13 @@
   }
   .tt.show { opacity: 1; transform: translateY(0); }
   .tt strong { display: block; font-weight: 800; font-size: 12px; margin-bottom: 1px; }
+
+  .tl-wrap {
+  padding: 28px 36px 24px;
+  max-width: 734px;
+  width: 100%;
+  margin: 0 auto;
+}
 </style>
 </head>
 <body>
