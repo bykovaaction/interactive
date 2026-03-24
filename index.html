@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --font: 'Manrope', sans-serif;
+    --label-text: #1e2535;
+    --label-date: #8f9ab0;
+    --month-bg: #f3f4f7;
+    --month-border: #dde1ea;
+    --month-text: #8f9ab0;
+
+    /* per-segment colours */
+    --c0: #5b9cf6; /* Анализ      – blue   */
+    --c1: #6ac47e; /* Разработка  – green  */
+    --c2: #f6a94a; /* Тестирование– orange */
+    --c3: #a07ef7; /* Внедрение   – violet */
+
+    --c0-light: #d6e8fe;
+    --c1-light: #d4f0db;
+    --c2-light: #fde8c8;
+    --c3-light: #e3d8fd;
+
+    /* status */
+    --done-bg:  #6ac47e; --done-border: #fff;
+    --wip-bg:   #f6a94a; --wip-border:  #fff;
+    --todo-bg:  #c8cdd8; --todo-border: #fff;
+
+    /* today */
+    --today: #e5464b;
+  }
+
+  html, body {
+    background: #fff;
+    font-family: var(--font);
+    overflow: hidden;
+  }
+
+  .tl-wrap { padding: 28px 36px 24px; }
+
+  /* ── MONTHS ── */
+  .months-row {
+    display: flex;
+    border: 1px solid var(--month-border);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .month-cell {
+    flex: 1;
+    background: var(--month-bg);
+    text-align: center;
+    padding: 9px 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--month-text);
+    border-right: 1px solid var(--month-border);
+    user-select: none;
+  }
+  .month-cell:last-child { border-right: none; }
+
+  /* ── STAGE ── */
+  .stage {
+    position: relative;
+    height: 176px;
+  }
+
+  /* ── BARS ── */
+  .bars {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 44px;
+    display: flex;
+  }
+
+  .bar-track {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    cursor: pointer;
+    min-width: 0;
+  }
+  /* base fill (light) */
+  .bar-base {
+    position: absolute;
+    inset: 0;
+    transition: filter .18s;
+  }
+  /* progress fill (darker) */
+  .bar-progress {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 0; /* animated in */
+    transition: width .7s cubic-bezier(.4,0,.2,1);
+  }
+  /* label */
+  .bar-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fff;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,.18);
+    z-index: 2;
+    padding: 0 8px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .bar-label span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .bar-pct {
+    font-size: 10px;
+    font-weight: 800;
+    opacity: .9;
+    background: rgba(255,255,255,.22);
+    padding: 1px 5px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .bar-track:hover .bar-base { filter: brightness(.92); }
+
+  /* white gap between segments */
+  .bar-gap {
+    width: 3px;
+    height: 100%;
+    background: #fff;
+    flex-shrink: 0;
+    z-index: 3;
+  }
+
+  /* ── TODAY LINE ── */
+  .today-line {
+    position: absolute;
+    top: -136px; /* reach up to top of stage */
+    bottom: 0;
+    width: 2px;
+    background: var(--today);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .4s .9s;
+  }
+  .today-line.visible { opacity: 1; }
+  .today-label {
+    position: absolute;
+    top: 0;
+    left: 5px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    color: var(--today);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .today-dot {
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--today);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px var(--today);
+  }
+
+  /* ── MILESTONE PINS ── */
+  .pin {
+    position: absolute;
+    bottom: 44px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    z-index: 8;
+  }
+  .pin-label {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .pin-title {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--label-text);
+    line-height: 1.38;
+    white-space: pre-line;
+    transition: color .2s;
+  }
+  .pin-date {
+    display: block;
+    font-size: 10.5px;
+    color: var(--label-date);
+    margin-top: 2px;
+  }
+  .pin-stem {
+    width: 1.5px;
+    height: 20px;
+    background: #c8cdd8;
+    transition: background .2s;
+  }
+  /* STATUS CIRCLE */
+  .pin-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2.5px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    line-height: 1;
+    box-shadow: 0 1px 6px rgba(0,0,0,.15);
+    transition: transform .2s, box-shadow .2s;
+    flex-shrink: 0;
+  }
+  .pin-dot.done { background: var(--done-bg); }
+  .pin-dot.wip  { background: var(--wip-bg); }
+  .pin-dot.todo { background: var(--todo-bg); }
+
+  .pin:hover .pin-dot {
+    transform: scale(1.28);
+    box-shadow: 0 0 0 5px rgba(0,0,0,.1);
+  }
+  .pin:hover .pin-stem  { background: #6e7a90; }
+  .pin:hover .pin-title { color: #3d5068; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #edf0f5;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #8f9ab0; font-weight: 500;
+  }
+  .legend-swatch {
+    width: 12px; height: 12px; border-radius: 3px;
+  }
+  .legend-dot-s {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .legend-today {
+    width: 12px; height: 2px; background: var(--today); border-radius: 2px;
+  }
+
+  /* ── TOOLTIP ── */
+  .tt {
+    position: fixed;
+    background: #1e2535;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 13px;
+    font-size: 11.5px;
+    font-family: var(--font);
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity .15s, transform .15s;
+    z-index: 9999;
+    white-space: nowrap;
+    line-height: 1.65;
+    box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  }
+  .tt.show { opacity: 1; transform: translateY(0); }
+  .tt strong { display: block; font-weight: 800; font-size: 12px; margin-bottom: 1px; }
+</style>
+</head>
+<body>
+<div class="tl-wrap">
+
+  <!-- months -->
+  <div class="months-row">
+    <div class="month-cell">Апрель</div>
+    <div class="month-cell">Май</div>
+    <div class="month-cell">Июнь</div>
+  </div>
+
+  <!-- stage: milestones + bars + today -->
+  <div class="stage" id="stage">
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <!-- legend -->
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+(function () {
+
+  /* ── RANGE ── */
+  const START = new Date('2025-04-01');
+  const END   = new Date('2025-07-02');
+  const SPAN  = END - START;
+  function pct(ds) { return Math.min(100, Math.max(0, (new Date(ds) - START) / SPAN * 100)); }
+
+  /* ── DATA ── */
+  /* progress: 0–100 (how much of this phase is done) */
+  const segments = [
+    { label: 'Анализ требований',  start:'2025-04-01', end:'2025-04-10', progress:100, colorVar:'--c0', lightVar:'--c0-light', tip:'Сбор и анализ требований заказчика' },
+    { label: 'Разработка системы', start:'2025-04-10', end:'2025-05-10', progress:100, colorVar:'--c1', lightVar:'--c1-light', tip:'Проектирование и разработка системы' },
+    { label: 'Тестирование',       start:'2025-05-10', end:'2025-05-28', progress: 60, colorVar:'--c2', lightVar:'--c2-light', tip:'QA и приёмочное тестирование' },
+    { label: 'Внедрение',          start:'2025-05-28', end:'2025-07-01', progress:  0, colorVar:'--c3', lightVar:'--c3-light', tip:'Развёртывание и ввод в эксплуатацию' },
+  ];
+
+  /* status: done ✓ | wip ⏳ | todo ○ */
+  const milestones = [
+    { date:'2025-04-10', title:'Подготовлено\nтехническое задание', sub:'10 апреля', status:'done' },
+    { date:'2025-05-10', title:'Разработан\nпрототип системы',      sub:'10 мая',    status:'done' },
+    { date:'2025-05-28', title:'Завершено\nтестирование',           sub:'28 мая',    status:'wip'  },
+    { date:'2025-07-01', title:'Система введена\nв эксплуатацию',   sub:'1 июля',    status:'todo' },
+  ];
+
+  const STATUS_ICON  = { done:'✓', wip:'⏳', todo:'○' };
+  const STATUS_LABEL = { done:'Выполнено', wip:'В процессе', todo:'Предстоит' };
+  const STATUS_COLOR = { done:'var(--done-bg)', wip:'var(--wip-bg)', todo:'var(--todo-bg)' };
+
+  const barsEl  = document.getElementById('bars');
+  const stageEl = document.getElementById('stage');
+  const ttEl    = document.getElementById('tt');
+
+  /* ── BARS ── */
+  segments.forEach((seg, i) => {
+    const color      = getComputedStyle(document.documentElement).getPropertyValue(seg.colorVar).trim() || '#aaa';
+    const colorLight = getComputedStyle(document.documentElement).getPropertyValue(seg.lightVar).trim() || '#ddd';
+
+    // white gap divider between segments
+    if (i > 0) {
+      const gap = document.createElement('div');
+      gap.className = 'bar-gap';
+      barsEl.appendChild(gap);
+    }
+
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+
+    // rounded outer edges only
+    const r = '8px';
+    track.style.borderRadius = i === 0 ? `${r} 0 0 ${r}` : i === segments.length-1 ? `0 ${r} ${r} 0` : '0';
+
+    // base (light)
+    const base = document.createElement('div');
+    base.className = 'bar-base';
+    base.style.background = colorLight;
+
+    // progress fill (solid colour)
+    const prog = document.createElement('div');
+    prog.className = 'bar-progress';
+    prog.style.background = color;
+    requestAnimationFrame(() => setTimeout(() => {
+      prog.style.width = seg.progress + '%';
+    }, 100 + i * 120));
+
+    // label
+    const lbl = document.createElement('div');
+    lbl.className = 'bar-label';
+    lbl.innerHTML = `<span>${seg.label}</span><span class="bar-pct">${seg.progress}%</span>`;
+
+    track.appendChild(base);
+    track.appendChild(prog);
+    track.appendChild(lbl);
+
+    track.addEventListener('mouseenter', e => showTT(e, `<strong>${seg.label}</strong>${seg.tip}<br>Прогресс: ${seg.progress}%`));
+    track.addEventListener('mousemove',  moveTT);
+    track.addEventListener('mouseleave', hideTT);
+    barsEl.appendChild(track);
+  });
+
+  /* ── MILESTONES — positioned at equal segment boundaries (25% each) ── */
+  // Segment boundaries in %: 0, 25, 50, 75, 100
+  const pinPositions = [25, 50, 75, 100];
+  milestones.forEach((m, i) => {
+    const pin = document.createElement('div');
+    pin.className = 'pin';
+    pin.style.left = pinPositions[i] + '%';
+
+    pin.innerHTML = `
+      <div class="pin-label">
+        <span class="pin-title">${m.title}</span>
+        <span class="pin-date">${m.sub}</span>
+      </div>
+      <div class="pin-stem"></div>
+      <div class="pin-dot ${m.status}">${STATUS_ICON[m.status]}</div>
+    `;
+
+    // entrance
+    pin.style.opacity = '0';
+    pin.style.transform = 'translateX(-50%) translateY(-10px)';
+    setTimeout(() => {
+      pin.style.transition = 'opacity .35s, transform .4s cubic-bezier(.34,1.4,.64,1)';
+      pin.style.opacity = '1';
+      pin.style.transform = 'translateX(-50%) translateY(0)';
+    }, 550 + i * 90);
+
+    pin.addEventListener('mouseenter', e => showTT(e,
+      `<strong>${m.title.replace('\n',' ')}</strong>${m.sub} · ${STATUS_LABEL[m.status]}`));
+    pin.addEventListener('mousemove',  moveTT);
+    pin.addEventListener('mouseleave', hideTT);
+
+    stageEl.appendChild(pin);
+  });
+
+  /* ── LEGEND ── */
+  const legendEl = document.getElementById('legend');
+
+  // segment colours
+  segments.forEach(seg => {
+    const color = getComputedStyle(document.documentElement).getPropertyValue(seg.colorVar).trim();
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<span class="legend-swatch" style="background:${color}"></span>${seg.label}`;
+    legendEl.appendChild(item);
+  });
+
+  // status icons
+  Object.entries(STATUS_LABEL).forEach(([key, label]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<span class="legend-dot-s" style="background:${STATUS_COLOR[key]}">${STATUS_ICON[key]}</span>${label}`;
+    legendEl.appendChild(item);
+  });
+
+  /* ── TOOLTIP ── */
+  function showTT(e, html) { ttEl.innerHTML = html; ttEl.classList.add('show'); moveTT(e); }
+  function moveTT(e) { ttEl.style.left = (e.clientX+14)+'px'; ttEl.style.top = (e.clientY-50)+'px'; }
+  function hideTT() { ttEl.classList.remove('show'); }
+
+})();
+</script>
+</body>
+</html>
